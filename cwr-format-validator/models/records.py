@@ -23,6 +23,75 @@ class Record(object):
         # Whether a record is rejected or not
         self._rejected = False
 
+    @staticmethod
+    def factory(record):
+        record_type = record[0:3]
+
+        if record_type == 'AGR':
+            record_object = AgreementRecord(record)
+        elif record_type == 'ALT':
+            record_object = WorkAlternativeTitleRecord(record)
+        elif record_type == 'ARI':
+            record_object = WorkAdditionalInfoRecord(record)
+        elif record_type == 'COM':
+            record_object = WorkCompositeRecord(record)
+        elif record_type == 'EWT':
+            record_object = WorkExcerptTitle(record)
+        elif record_type == 'GRH':
+            record_object = GroupHeaderRecord(record)
+        elif record_type == 'GRT':
+            record_object = GroupTrailerRecord(record)
+        elif record_type == 'HDR':
+            record_object = TransmissionHeaderRecord(record)
+        elif record_type == 'IND':
+            record_object = InstrumentationDetailRecord(record)
+        elif record_type == 'INS':
+            record_object = InstrumentationSummaryRecord(record)
+        elif record_type == 'IPA':
+            record_object = InterestedPartyRecord(record)
+        elif record_type == 'NAT':
+            record_object = NRWorkTitleRecord(record)
+        elif record_type in ['NCT', 'NET', 'NVT']:
+            record_object = NRSpecialTitleRecord(record)
+        elif record_type == 'NOW':
+            record_object = NROtherWriterRecord(record)
+        elif record_type == 'NPA':
+            record_object = NRAgreementPartyNameRecord(record)
+        elif record_type == 'NPN':
+            record_object = NRPublisherNameRecord(record)
+        elif record_type == 'NPR':
+            record_object = NRPerformanceDataRecord(record)
+        elif record_type == 'NWN':
+            record_object = NRWriterNameRecord(record)
+        elif record_type in ['NWR', 'REV']:
+            record_object = RegistrationRecord(record)
+        elif record_type == 'ORN':
+            record_object = WorkOriginRecord(record)
+        elif record_type == 'PER':
+            record_object = PerformingArtistRecord(record)
+        elif record_type == 'PWR':
+            record_object = WriterAgentRecord(record)
+        elif record_type == 'REC':
+            record_object = RecordingDetailRecord(record)
+        elif record_type == 'SPT':
+            record_object = PublisherTerritoryRecord(record)
+        elif record_type in ['SPU', 'OPU']:
+            record_object = PublisherControlRecord(record)
+        elif record_type in ['SWR', 'OWR']:
+            record_object = WriterControlRecord(record)
+        elif record_type == 'SWT':
+            record_object = WriterTerritoryRecord(record)
+        elif record_type == 'TER':
+            record_object = TerritoryRecord(record)
+        elif record_type == 'TRL':
+            record_object = TransmissionTrailerRecord(record)
+        elif record_type == 'VER':
+            record_object = WorkVersionTitle(record)
+        else:
+            raise ValueError('Wrong record creation, obtained type: {}'.format(record_type))
+
+        return record_object
+
     @property
     def rejected(self):
         return self._rejected
@@ -34,10 +103,10 @@ class Record(object):
         """
         matcher = re.compile(self._regex)
 
-        if not matcher.match(self._raw_record):
+        if not matcher.match(self._raw_record[0:self._regex_size]):
             self._rejected = True
 
-        return self._rejected
+        return not self._rejected
 
     def _generate_regex(self):
         """
@@ -132,7 +201,7 @@ class AgreementRecord(Record):
 
 class GroupHeaderRecord(Record):
     FIELD_REGEX = [regex.get_defined_values_regex(3, False, 'GRH'),
-                   regex.get_alpha_regex(3),
+                   regex.get_defined_values_regex(3, False, 'AGR', 'NWR', 'REV'),
                    regex.get_numeric_regex(5),
                    regex.get_defined_values_regex(5, False, '02\.10'),
                    regex.get_numeric_regex(10, True),
@@ -423,7 +492,7 @@ class WorkAdditionalInfoRecord(Record):
 
 class WorkAlternativeTitleRecord(Record):
     FIELD_REGEX = [RecordPrefix.REGEX,
-                   regex.get_ascii_regex(60),
+                   regex.get_non_roman_regex(60),
                    regex.get_alpha_regex(2),
                    regex.get_alpha_regex(2, True)]
 

@@ -55,3 +55,6 @@ target/
 
 # Idea
 .idea/
+
+# CWR
+*.V21
