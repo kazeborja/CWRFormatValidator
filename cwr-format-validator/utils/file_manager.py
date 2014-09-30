@@ -1,8 +1,10 @@
 import os
+
 from werkzeug.utils import secure_filename
 
+from app.uploads import __uploads__
+
 __author__ = 'Borja'
-from api.uploads import __uploads__
 
 
 class FileManager(object):
