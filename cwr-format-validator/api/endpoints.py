@@ -1,9 +1,10 @@
 from flask.ext.restful import Api, Resource
+from flask import request, Response
 
 from api import api_app
-from flask import request, Response
 from utils.json_converter import JsonConverter
 from validator import Validator
+
 
 __author__ = 'Borja'
 
@@ -13,7 +14,7 @@ api = Api(api_app)
 # Utils class to work with json
 jsonConverter = JsonConverter()
 
-# Main class of the app, in charge of the validation
+# Main class of the webapp, in charge of the validation
 validator = Validator()
 
 
@@ -48,8 +49,39 @@ class ValidateDocumentRegexAPI(Resource):
 
             return response_json_item(result)
 
-api.add_resource(ValidateDocumentRegexAPI, '/document/validation/regex', endpoint='regex_validation')
 
+class ValidateDocumentAPI(Resource):
+    @staticmethod
+    def get():
+
+        return 'Please, use this endpoint by post method.'
+
+    @staticmethod
+    def post():
+
+        if request.json is None:
+            result = {
+                'success': False,
+                'error': 'Expected json content'
+            }
+
+            return response_json_item(result)
+        else:
+            # Get json document from the request
+            json_document = request.json
+
+            # Validate the regex
+            document = validator.validate_document(json_document)
+
+            result = {
+                'success': True,
+                'document': document
+            }
+
+            return response_json_item(result)
+
+api.add_resource(ValidateDocumentRegexAPI, '/document/validation/regex', endpoint='regex_validation')
+api.add_resource(ValidateDocumentAPI, '/document/validation', endpoint='validation')
 
 def response_json_list(app_request, collection):
     """

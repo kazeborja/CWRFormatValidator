@@ -1,9 +1,12 @@
 import codecs
 import urllib2
-from app import app
-from flask import render_template, request, Response
+
+from flask import render_template, request, send_file
+
+from webapp import app
 from utils.file_manager import FileManager
 from utils.json_converter import JsonConverter
+
 
 __author__ = 'Borja'
 
@@ -36,10 +39,19 @@ def manage_uploaded_file():
             document_content = file_utf8.readlines()
 
             json_document = jsonConverter.parse_object(document_content)
-        req = urllib2.Request(API_ENDPOINT + '/document/validation/regex')
+        req = urllib2.Request(API_ENDPOINT + '/document/validation')
         req.add_header('Content-Type', 'application/json')
 
         response = urllib2.urlopen(req, json_document)
 
-        return response.read()
+        document = response.read().document
+
+        with open('CWROutput.V21', "w") as output_file:
+            for record in sorted(document.extract_records(), key=lambda item: item.number):
+                output_file.write((record.record + "\n").encode('utf-8'))
+                for message in record.messages:
+                    print str(message)
+                    output_file.write(str(message) + "\n")
+
+        return send_file('CWROutput.V21')
 

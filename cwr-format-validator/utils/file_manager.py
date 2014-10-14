@@ -2,7 +2,7 @@ import os
 
 from werkzeug.utils import secure_filename
 
-from app.uploads import __uploads__
+from webapp.uploads import __uploads__
 
 __author__ = 'Borja'
 

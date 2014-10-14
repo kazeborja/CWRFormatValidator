@@ -5,4 +5,4 @@ __author__ = 'Borja'
 app = Flask(__name__)
 app.config['DEBUG'] = True
 
-from app import views
+from webapp import views
