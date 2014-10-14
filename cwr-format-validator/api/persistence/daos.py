@@ -12,6 +12,7 @@ class DAO(object):
     """
     Generic DAO for all classes, only the class is needed
     """
+
     def __init__(self, cls):
         """
         Constructor for DAO
@@ -28,7 +29,7 @@ class DAO(object):
         :param session: session of the database used
         """
         self.session = session
-        
+
     def get_all(self):
         """
         Method that returns all countries in the database
@@ -45,7 +46,7 @@ class DAO(object):
         :return: element with the given id
         """
         return self.session.query(self.cls).filter_by(id=code).first()
-    
+
     def insert(self, element):
         """
         Method that inserts a new element
@@ -84,55 +85,46 @@ class DAO(object):
 
 
 class AgreementTypeDAO(DAO):
-
     def __init__(self):
         super(AgreementTypeDAO, self).__init__(AgreementType)
 
 
 class AgreementRoleDAO(DAO):
-
     def __init__(self):
         super(AgreementRoleDAO, self).__init__(AgreementRole)
 
 
 class CompositeTypeDAO(DAO):
-
     def __init__(self):
         super(CompositeTypeDAO, self).__init__(CompositeType)
 
 
 class DistributionCategoryDAO(DAO):
-
     def __init__(self):
         super(DistributionCategoryDAO, self).__init__(DistributionCategory)
 
 
 class ExcerptTypeDAO(DAO):
-
     def __init__(self):
         super(ExcerptTypeDAO, self).__init__(ExcerptType)
 
 
 class LyricAdaptationDAO(DAO):
-
     def __init__(self):
         super(LyricAdaptationDAO, self).__init__(LyricAdaptation)
 
 
 class MusicArrangementDAO(DAO):
-
     def __init__(self):
         super(MusicArrangementDAO, self).__init__(MusicArrangement)
 
 
 class SocietyDAO(DAO):
-
     def __init__(self):
         super(SocietyDAO, self).__init__(SocietyDAO)
 
 
 class TerritoryDAO(DAO):
-
     def __init__(self):
         super(TerritoryDAO, self).__init__(Territory)
 
@@ -146,24 +138,20 @@ class TerritoryDAO(DAO):
         return self.session.query(self.cls).filter_by(tis=code).first()
 
     def get_by_iso2(self, iso2):
-
         return self.session.query(self.cls).filter_by(iso2=iso2).first()
 
 
 class TextMusicRelationshipDAO(DAO):
-
     def __init__(self):
         super(TextMusicRelationshipDAO, self).__init__(TextMusicRelationship)
 
 
 class VersionTypeDAO(DAO):
-
     def __init__(self):
         super(VersionTypeDAO, self).__init__(VersionType)
 
 
 class WorkTypeDAO(DAO):
-
     def __init__(self):
         super(WorkTypeDAO, self).__init__(WorkType)
 
@@ -177,5 +165,5 @@ def update_object_attributes(object_to_update, object_with_new_attributes):
     :param object_with_new_attributes: object with the new values
     """
     for attr in dir(object_to_update):
-            if hasattr(object_with_new_attributes, attr) and attr[0] is not "_":
-                setattr(object_to_update, attr, getattr(object_with_new_attributes, attr))
+        if hasattr(object_with_new_attributes, attr) and attr[0] is not "_":
+            setattr(object_to_update, attr, getattr(object_with_new_attributes, attr))

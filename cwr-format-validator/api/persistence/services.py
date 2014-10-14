@@ -83,6 +83,7 @@ class AgreementTypeService(GenericService):
     """
     Service for agreement type dao
     """
+
     def __init__(self):
         """
         Constructor for indicator service
@@ -95,6 +96,7 @@ class AgreementRoleService(GenericService):
     """
     Service for agreement type dao
     """
+
     def __init__(self):
         """
         Constructor for indicator service
@@ -104,42 +106,36 @@ class AgreementRoleService(GenericService):
 
 
 class CompositeTypeService(GenericService):
-
     def __init__(self):
         super(CompositeTypeService, self).__init__()
         self.dao = CompositeTypeDAO()
 
 
 class DistributionCategoryService(GenericService):
-
     def __init__(self):
         super(DistributionCategoryService, self).__init__()
         self.dao = DistributionCategoryDAO()
 
 
 class ExcerptTypeService(GenericService):
-
     def __init__(self):
         super(ExcerptTypeService, self).__init__()
         self.dao = ExcerptTypeDAO()
 
 
 class LyricAdaptationService(GenericService):
-
     def __init__(self):
         super(LyricAdaptationService, self).__init__()
         self.dao = LyricAdaptationDAO()
 
 
 class MusicArrangementService(GenericService):
-
     def __init__(self):
         super(MusicArrangementService, self).__init__()
         self.dao = MusicArrangementDAO()
 
 
 class SocietyService(GenericService):
-
     def __init__(self):
         super(SocietyService, self).__init__()
         self.dao = SocietyDAO()
@@ -149,6 +145,7 @@ class TerritoryService(GenericService):
     """
     Service for agreement type dao
     """
+
     def __init__(self):
         """
         Constructor for indicator service
@@ -157,26 +154,22 @@ class TerritoryService(GenericService):
         self.dao = TerritoryDAO()
 
     def get_by_iso2(self, iso2):
-
         return self.tm.execute(self.dao, self.dao.get_by_iso2, iso2)
 
 
 class TextMusicRelationshipService(GenericService):
-
     def __init__(self):
         super(TextMusicRelationshipService, self).__init__()
         self.dao = TextMusicRelationshipDAO()
 
 
 class VersionTypeService(GenericService):
-
     def __init__(self):
         super(VersionTypeService, self).__init__()
         self.dao = VersionTypeDAO()
 
 
 class WorkTypeService(GenericService):
-
     def __init__(self):
         super(WorkTypeService, self).__init__()
         self.dao = WorkTypeDAO()

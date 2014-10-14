@@ -1,4 +1,5 @@
 import unittest
+
 from models import regex
 from models.cwr_objects import CWRField
 

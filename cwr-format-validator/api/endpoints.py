@@ -1,6 +1,6 @@
-from flask.ext.restful import Api, Resource
 from flask import request, Response
 
+from flask.ext.restful import Api, Resource
 from api import api_app
 from utils.json_converter import JsonConverter
 from validator import Validator
@@ -80,8 +80,10 @@ class ValidateDocumentAPI(Resource):
 
             return response_json_item(result)
 
+
 api.add_resource(ValidateDocumentRegexAPI, '/document/validation/regex', endpoint='regex_validation')
 api.add_resource(ValidateDocumentAPI, '/document/validation', endpoint='validation')
+
 
 def response_json_list(app_request, collection):
     """

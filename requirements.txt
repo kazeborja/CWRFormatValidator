@@ -1,0 +1,4 @@
+xlrd
+werkzeug
+sqlalchemy
+flask

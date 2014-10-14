@@ -1,7 +1,6 @@
 import os
 
 import xlrd
-
 from files import __data__
 
 

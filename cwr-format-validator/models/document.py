@@ -1,5 +1,4 @@
 from __future__ import absolute_import
-from models.cwr_objects import CWRMessage
 
 __author__ = 'Borja'
 

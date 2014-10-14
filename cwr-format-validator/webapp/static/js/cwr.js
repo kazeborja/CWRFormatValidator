@@ -3,10 +3,10 @@
  */
 function togglePanels(panelType) {
     if (!panelType.checked) {
-        $("." + panelType.id).hide()
+        $("." + panelType.id).hide();
         panelType.checked = false
     } else {
-        $("." + panelType.id).show()
+        $("." + panelType.id).show();
         panelType.checked = true
     }
 }
