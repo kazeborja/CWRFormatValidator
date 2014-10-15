@@ -89,7 +89,7 @@ class Validator(object):
         agreement = agreement
 
         while self._records:
-            record_type = str(self._records[0].record_type)
+            record_type = self._records[0].record_type.value
 
             # Now we don't pop the element as it can be a new transaction
             if record_type in ['IPA', 'NPA']:
@@ -105,7 +105,7 @@ class Validator(object):
         registration = registration
 
         while self._records:
-            record_type = str(self._records[0].record_type)
+            record_type = self._records[0].record_type.value
 
             # Now we don't pop the element as it can be a new transaction
             if record_type in ['SPU', 'OPU']:
@@ -151,20 +151,20 @@ class Validator(object):
         publisher = publisher
 
         while self._records:
-            record_type = str(self._records[0].record_type)
+            record_type = self._records[0].record_type.value
 
             if record_type in ['SPU', 'OPU']:
-                if self._records[0].sequence_id != publisher.sequence_id:
+                if self._records[0].sequence_id.value != publisher.sequence_id.value:
 
                     # This means the chain has been changed
                     return publisher
 
                 record = self._records.pop(0)
 
-                if record.type == 'AM':
-                    publisher.add_administrator(record)
-                elif record.type == 'SE':
-                    publisher.add_sub_publisher(record)
+                if record.type.value == 'AM':
+                    publisher.add_administrator(self._validate_publisher(record))
+                elif record.type.value == 'SE':
+                    publisher.add_sub_publisher(self._validate_publisher(record))
             elif record_type == 'SPT':
                 record = self._records.pop(0)
                 publisher.add_territory(record)
@@ -178,7 +178,7 @@ class Validator(object):
         writer = writer
 
         while self._records:
-            record_type = str(self._records[0].record_type)
+            record_type = self._records[0].record_type.value
 
             if record_type == 'NWN':
                 record = self._records.pop(0)

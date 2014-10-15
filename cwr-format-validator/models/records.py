@@ -229,7 +229,7 @@ class AgreementRecord(Record):
                   CWRField('End date', regex.get_date_regex(True)),
                   CWRField('Retention end date', regex.get_date_regex(True)),
                   CWRField('Prior royalty status', regex.get_defined_values_regex(1, False, 'A', 'D', 'N')),
-                  CWRField('Prior royalty start date', regex.get_date_regex(True)),
+                  CWRField('Prior royalty status date', regex.get_date_regex(True)),
                   CWRField('Post_term collection status', regex.get_defined_values_regex(1, False, 'D', 'N', 'O')),
                   CWRField('Post_term collection end date', regex.get_date_regex(True)),
                   CWRField('Signature date', regex.get_date_regex(True)),

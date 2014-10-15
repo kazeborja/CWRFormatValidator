@@ -73,9 +73,16 @@ class ValidateDocumentAPI(Resource):
             # Validate the regex
             document = validator.validate_document(json_document)
 
+            records = []
+            for record in sorted(document.extract_records(), key=lambda item: item.number):
+                records.append(record.record.encode('utf-8'))
+                for message in record.messages:
+                    records.append(str(message).encode('utf-8'))
+
             result = {
                 'success': True,
-                'document': document
+                'document': document,
+                'records': records
             }
 
             return response_json_item(result)

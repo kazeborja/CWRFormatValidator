@@ -1,4 +1,5 @@
 import codecs
+import json
 import urllib2
 
 from flask import render_template, request, send_file
@@ -32,7 +33,7 @@ def manage_uploaded_file():
     sent_file = request.files['file']
 
     if sent_file:
-        file_path = fileManager.save_file(sent_file)
+        file_path = fileManager.save_file(sent_file, 'uploads')
 
         # Open the uploaded file in utf-8 format and validate it
         with codecs.open(file_path, encoding='utf-8') as file_utf8:
@@ -44,14 +45,18 @@ def manage_uploaded_file():
 
         response = urllib2.urlopen(req, json_document)
 
-        document = response.read().document
+        response_json = json.loads(response.read())
 
-        with open('CWROutput.V21', "w") as output_file:
-            for record in sorted(document.extract_records(), key=lambda item: item.number):
-                output_file.write((record.record + "\n").encode('utf-8'))
-                for message in record.messages:
-                    print str(message)
-                    output_file.write(str(message) + "\n")
+        with open(FileManager.get_validations_path('CWROutput.V21'), "w") as output_file:
+            for record in response_json["records"]:
+                output_file.write((record + "\n").encode('utf-8'))
 
-        return send_file('CWROutput.V21')
+        return render_template('results.html', filename='CWROutput.V21', document=response_json["document"])
+
+
+@app.route('/download/<file_name>', methods=['GET'])
+def download_file(file_name):
+    return send_file(FileManager.get_validations_path(file_name),
+                     as_attachment=True,
+                     attachment_filename="validation-result.V21")
 

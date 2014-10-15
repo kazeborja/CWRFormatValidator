@@ -24,6 +24,10 @@ class CWRField(object):
         return self._name
 
     @property
+    def rejected(self):
+        return self._rejected
+
+    @property
     def value(self):
         return self._value
 
@@ -132,14 +136,17 @@ class CWRObject(object):
         self.record_type = None
         self.transaction_number = None
         self.record_number = None
+        self.raw_record_number = None
 
         for field in fields:
             if hasattr(self, field.name):
                 setattr(self, field.name, field)
 
-        self._last_record = self.record_type
+        self._last_record = self.record_type.value
 
         self._messages = []
+
+        self.format_fields()
 
     @property
     def record(self):
@@ -159,12 +166,20 @@ class CWRObject(object):
 
     def reject(self, msg_text, record=None, msg_type=CWRMessage.TYPES.RECORD, msg_level=CWRMessage.TYPES.RECORD):
         rejection_record = self if record is None else record
-        rejection_number = rejection_record.record_number.value if rejection_record.record_number is not None \
+        rejection_number = rejection_record.raw_record_number if rejection_record.record_number is not None \
             else "00000000"
         message = CWRMessage(msg_type, rejection_number, rejection_record.record_type.value, msg_level, msg_text)
         self._messages.append(message)
 
         self._rejected = True
+
+    def format_fields(self):
+        if self.record_number is not None:
+            self.raw_record_number = self.record_number.value
+            self.record_number.format('integer')
+
+        if self.transaction_number is not None:
+            self.transaction_number.format('integer')
 
     @abc.abstractmethod
     def field_level_validation(self):
@@ -195,6 +210,8 @@ class CWRObject(object):
 
 class Agreement(CWRObject):
     def __init__(self, number, record, fields):
+        self.records = []
+
         self._territories = []
         self._interested_parties = {}
 
@@ -222,26 +239,26 @@ class Agreement(CWRObject):
             territory.reject('Wrong transaction number')
         else:
             if self._last_record not in ['AGR', 'TER']:
-                self._rejected = True
+                self.transaction_reject('Unexpected territory record')
 
             self._territories.append(territory)
-            self._last_record = territory.record_type
+            self._last_record = territory.record_type.value
 
     def add_interested_party(self, ipa):
         if self.transaction_number.value != ipa.transaction_number.value:
             ipa.reject('Wrong transaction number')
         else:
-            if ipa.record_type == 'NPA':
-                if self._last_record != 'IPA' or ipa.interested_party_id not in self._interested_parties.keys():
-                    ipa.reject()
+            if ipa.record_type.value == 'NPA':
+                if self._last_record != 'IPA' or ipa.interested_party_id.value not in self._interested_parties.keys():
+                    ipa.reject('Interested party id does not correspond to precious interested party')
 
-                self._interested_parties[ipa.interested_party_id].nr_name = ipa
+                self._interested_parties[str(ipa.interested_party_id)].nr_name = ipa
             else:
                 if self._last_record not in ['IPA', 'NPA', 'TER']:
-                    self._rejected = True
+                    self.transaction_reject('Unexpected interested party record')
 
-                self._interested_parties[ipa.id] = ipa
-            self._last_record = ipa.record_type
+                self._interested_parties[str(ipa.id)] = ipa
+            self._last_record = ipa.record_type.value
 
     def extract_records(self):
         records = []
@@ -253,7 +270,20 @@ class Agreement(CWRObject):
 
         records.extend(self._territories)
 
+        self.records = records
+
         return records
+
+    def format_fields(self):
+        super(Agreement, self).format_fields()
+
+        self.start_date.format('date')
+        self.end_date.format('date')
+        self.retention_end_date.format('date')
+        self.prior_royalty_status_date.format('date')
+        self.post_term_collection_end_date.format('date')
+        self.signature_date.format('date')
+        self.works_number.format('integer')
 
     def field_level_validation(self):
         for territory in self._territories:
@@ -262,8 +292,6 @@ class Agreement(CWRObject):
         for ipa in self._interested_parties.values():
             ipa.field_level_validation()
 
-        self.international_standard_number.format('integer')
-        self.signature_date.format('date')
         self.shares_change.check(['Y', 'N'], 'N')
         self.advance_given.check(['Y', 'N'], 'N')
 
@@ -285,27 +313,27 @@ class Agreement(CWRObject):
             self.transaction_reject('Expected at least one territory record')
 
         if len(self._interested_parties) < 2 and not any(
-                        str(ipa.agreement_role_code) == 'AC' for ipa in self._interested_parties.values()) and not any(
-                        str(ipa.agreement_role_code) == 'AS' for ipa in self._interested_parties.values()):
+                str(ipa.agreement_role_code.value) == 'AC' for ipa in self._interested_parties.values()) and not any(
+                str(ipa.agreement_role_code.value) == 'AS' for ipa in self._interested_parties.values()):
             self.transaction_reject('Expected two interested parties, one as assignor and one as acquirer')
 
-        if sum(ipa.pr_share for ipa in self._interested_parties.values()) != 100:
+        if sum(ipa.pr_share.value for ipa in self._interested_parties.values()) != 100:
             self.transaction_reject('The total of PR Share within interested parties must be 100')
-        if sum(ipa.mr_share for ipa in self._interested_parties.values()) != 100:
+        if sum(ipa.mr_share.value for ipa in self._interested_parties.values()) != 100:
             self.transaction_reject('The total of MR Share within interested parties must be 100')
-        if sum(ipa.sr_share for ipa in self._interested_parties.values()) != 100:
+        if sum(ipa.sr_share.value for ipa in self._interested_parties.values()) != 100:
             self.transaction_reject('The total of SR Share within interested parties must be 100')
 
         if self.type.check(AGREEMENT_TYPE_VALUES):
             self.transaction_reject('Not a valid agreement type')
-        if self.start_date.format('date'):
+        if self.start_date.rejected:
             self.transaction_reject('Agreement start date not a valid date')
-        if self.end_date.format('date'):
+        if self.end_date.rejected:
             self.transaction_reject('End date not a valid date')
-        if not self.retention_end_date.format('date') and self.retention_end_date < self.end_date:
+        if not self.retention_end_date.rejected and self.retention_end_date.value < self.end_date.value:
             self.transaction_reject('Retention end date must be equal or later to end date')
 
-        if self.prior_royalty_status_date.format('date'):
+        if self.prior_royalty_status_date.rejected:
             self.transaction_reject('Status date not a valid date')
         if self.prior_royalty_status.value == 'D' and self.prior_royalty_status_date.value is None:
             self.transaction_reject('Expected prior royalty status date')
@@ -314,24 +342,24 @@ class Agreement(CWRObject):
         if self.prior_royalty_status.value in ['N', 'A'] and self.prior_royalty_status_date.value is not None:
             self.transaction_reject('Not expected prior royalty status date')
 
-        if self.post_term_collection_end_date.format('date'):
+        if self.post_term_collection_end_date.rejected:
             self.transaction_reject('Post term collection end date not a valid date')
         if self.post_term_collection_end_date.value is not None and self.end_date.value is not None \
                 and self.post_term_collection_end_date.value <= self.end_date.value:
             self.transaction_reject('Post term collection end date must be after end date')
         elif self.post_term_collection_end_date.value is not None and \
-                        self.post_term_collection_end_date.value <= self.start_date.value:
+                self.post_term_collection_end_date.value <= self.start_date.value:
             self.transaction_reject('Post term collection end date must be after start date')
         if self.post_term_collection_status.value == 'D' and self.post_term_collection_end_date.value is None:
             self.transaction_reject('Expected post term collection end date')
         elif self.post_term_collection_status.value in ['N', 'O'] and \
-                        self.post_term_collection_end_date.value is not None:
+                self.post_term_collection_end_date.value is not None:
             self.transaction_reject('Not expected post term end date')
 
         if self.type.value in ['OS', 'PS'] and self.sales_manufacture_clause.value is None:
             self.transaction_reject('Expected sales manufacture clause')
 
-        if self.works_number.format('integer') or self.works_number.value <= 0:
+        if self.works_number.rejected or self.works_number.value <= 0:
             self.transaction_reject('Number of works must be greater than 0')
 
     def group_level_validation(self, group):
@@ -350,6 +378,7 @@ class Agreement(CWRObject):
 
     def transaction_reject(self, msg_text, record=None):
         rejection_record = self if record is None else record
+
         super(Agreement, self).reject(msg_text, rejection_record, CWRMessage.TYPES.TRANSACTION,
                                       CWRMessage.TYPES.TRANSACTION)
 
@@ -380,6 +409,12 @@ class Group(CWRObject):
 
     def add_transaction(self, transaction):
         self._transactions.append(transaction)
+
+    def format_fields(self):
+        super(Group, self).format_fields()
+
+        self.id.format('integer')
+        self.batch_request.format('integer')
 
     def field_level_validation(self):
         for transaction in self._transactions:
@@ -429,6 +464,14 @@ class GroupTrailer(CWRObject):
 
         super(GroupTrailer, self).__init__(number, record, fields)
 
+    def format_fields(self):
+        super(GroupTrailer, self).format_fields()
+
+        self.group_id.format('integer')
+        self.transaction_count.format('integer')
+        self.record_count.format('integer')
+        self.total_monetary_value.format('integer')
+
     def file_level_validation(self, document):
         pass
 
@@ -445,8 +488,8 @@ class GroupTrailer(CWRObject):
         # if self.record_count != len(group._transactions):
         # group.group_reject('Records count does not match')
 
-        self.total_monetary_value.format('integer')
-        if self.total_monetary_value.value is not None and self.currency_indicator.value is None:
+        if self.total_monetary_value.value is not None and self.total_monetary_value.value > 0 \
+                and self.currency_indicator.value is None:
             group.group_reject('Expected currency indicator with total monetary value present')
 
     def field_level_validation(self):
@@ -469,22 +512,30 @@ class Header(CWRObject):
 
         super(Header, self).__init__(number, record, fields)
 
+    def format_fields(self):
+        super(Header, self).format_fields()
+
+        self.sender_id.format('integer')
+        self.creation_date.format('date')
+        self.creation_time.format('time')
+        self.transmission_date.format('date')
+
     def file_level_validation(self, document):
         if self.sender_type.check(SENDER_VALUES):
             document.reject(self, 'Invalid sender type')
 
-        if self.sender_type.value in ['PB', 'WR', 'AA'] and self.sender_id is None:
+        if self.sender_type.value in ['PB', 'WR', 'AA'] and self.sender_id.value is None:
             document.reject(self, 'Expected sender id')
         elif self.sender_type.value == 'OS' and self.sender_id.check(SOCIETY_CODES):
             document.reject(self, 'Invalid sender ID for society')
 
-        if self.creation_date.format('date'):
+        if self.creation_date.rejected:
             document.reject(self, 'Invalid creation date')
-        if self.transmission_date.format('date'):
+        if self.transmission_date.rejected:
             document.reject(self, 'Invalid transmission date')
 
     def field_level_validation(self):
-        self.creation_date.format('time')
+        pass
 
     def transaction_level_validation(self, transaction):
         pass
@@ -502,6 +553,11 @@ class InstrumentationDetails(CWRObject):
         self.players_number = None
 
         super(InstrumentationDetails, self).__init__(number, record, fields)
+
+    def format_fields(self):
+        super(InstrumentationDetails, self).format_fields()
+
+        self.players_number.format('integer')
 
     def field_level_validation(self):
         pass
@@ -529,6 +585,11 @@ class InstrumentationSummary(CWRObject):
         self.instrumentation_description = None
 
         super(InstrumentationSummary, self).__init__(number, record, fields)
+
+    def format_fields(self):
+        super(InstrumentationSummary, self).format_fields()
+
+        self.voices_number.format('integer')
 
     def field_level_validation(self):
         pass
@@ -564,18 +625,29 @@ class InterestedParty(CWRObject):
         self.nr_name = None
         super(InterestedParty, self).__init__(number, record, fields)
 
+    def format_fields(self):
+        super(InterestedParty, self).format_fields()
+
+        self.pr_share.format('float')
+        self.mr_share.format('float')
+        self.sr_share.format('float')
+
     def transaction_level_validation(self, transaction):
         if self.agreement_role_code.value == 'AC' and \
-                                        self.pr_share.value == self.mr_share.value == self.sr_share.value == 0:
+                self.pr_share.value == self.mr_share.value == self.sr_share.value == 0:
             transaction.transaction_reject('Expected one of the shares greater than 0', self)
 
-        if self.pr_society.check(SOCIETY_CODES, True):
+        if self.pr_share.value is not None and self.pr_share.value > 0 and self.pr_society.value is None:
+            transaction.transaction_reject('Expected PR society', self)
+        elif self.pr_society.check(SOCIETY_CODES, True):
             transaction.transaction_reject('PR Society code is not valid', self)
         if not 0 <= self.pr_share.value <= 100:
             transaction.transaction_reject('PR share must be between 0 and 100', self)
         if self.pr_share.value > 0 and self.pr_society.value is None:
             transaction.transaction_reject('Expected PR society with share greater than 0', self)
 
+        if self.mr_share.value is not None and self.mr_share.value > 0 and self.mr_society.value is None:
+            transaction.transaction_reject('Expected MR society', self)
         if self.mr_society.check(SOCIETY_CODES, True):
             transaction.transaction_reject('MR Society code is not valid', self)
         if not 0 <= self.mr_share.value <= 100:
@@ -583,6 +655,8 @@ class InterestedParty(CWRObject):
         if self.mr_share.value > 0 and self.mr_society.value is None:
             transaction.transaction_reject('Expected MR society with share greater than 0', self)
 
+        if self.sr_share.value is not None and self.sr_share.value > 0 and self.sr_society.value is None:
+            transaction.transaction_reject('Expected SR society', self)
         if self.sr_society.check(SOCIETY_CODES, True):
             transaction.transaction_reject('SR Society code is not valid', self)
         if not 0 <= self.sr_share.value <= 100:
@@ -597,10 +671,6 @@ class InterestedParty(CWRObject):
         pass
 
     def field_level_validation(self):
-        self.pr_share.format('float')
-        self.mr_share.format('float')
-        self.sr_share.format('float')
-
         if self.agreement_role_code.value != 'AS':
             self.writer_first_name.reject()
 
@@ -865,14 +935,14 @@ class PublisherControl(CWRObject):
 
     def add_administrator(self, administrator):
         if self.type.value in ['E', 'PA', 'SE'] and administrator.type.value == 'AM':
-            self._administrators[administrator.sequence_id.value] = administrator
+            self._administrators[str(administrator.sequence_id.value)] = administrator
             self._last_record = administrator.record_type.value
         else:  # TODO: Raise exception
             pass
 
     def add_sub_publisher(self, sub_publisher):
         if self.type.value in ['E', 'PA'] and sub_publisher.type.value == 'SE':
-            self._sub_publishers[sub_publisher.sequence_id.value] = sub_publisher
+            self._sub_publishers[str(sub_publisher.sequence_id.value)] = sub_publisher
             self._last_record = sub_publisher.record_type.value
         else:  # TODO: Raise exception
             pass
@@ -909,6 +979,15 @@ class PublisherControl(CWRObject):
             records.extend(sub_publisher.extract_records())
 
         return records
+
+    def format_fields(self):
+        super(PublisherControl, self).format_fields()
+
+        self.sequence_id.format('integer')
+        self.tax_id_number.format('integer')
+        self.pr_share.format('float')
+        self.mr_share.format('float')
+        self.sr_share.format('float')
 
     def file_level_validation(self, document):
         for ter in self._territories:
@@ -997,20 +1076,17 @@ class PublisherControl(CWRObject):
         if self._nr_name is not None:
             self._nr_name.field_level_validation()
 
-        self.pr_share.format('float')
-        self.mr_share.format('float')
-        self.sr_share.format('float')
-
         if self.record_type.value == 'OPU':
             self.unknown_indicator.check(['Y', 'N'], False, 'N')
-            if self.unknown_indicator.value == 'Y' and self.name is not None:
+
+            if self.unknown_indicator.value == 'Y' and self.name.value is not None:
                 self.name.reject()
-            self.reversionary_indicator.rejec()
+
+            self.reversionary_indicator.reject()
             self.type.check(PUBLISHER_TYPES, False, 'E')
 
         self.reversionary_indicator.check(['Y', 'N', 'U'], True, None)
         self.first_recording_refusal_indicator.check(['Y', 'N'], True, None)
-        self.tax_id_number.format('integer')
         self.agreement_type.check(AGREEMENT_TYPE_VALUES, True)
 
 
@@ -1026,6 +1102,14 @@ class PublisherTerritory(CWRObject):
         self.sequence_id = None
 
         super(PublisherTerritory, self).__init__(number, record, fields)
+
+    def format_fields(self):
+        super(PublisherTerritory, self).format_fields()
+
+        self.pr_share.format('float')
+        self.mr_share.format('float')
+        self.sr_share.format('float')
+        self.sequence_id.format('integer')
 
     def file_level_validation(self, document):
         pass
@@ -1049,10 +1133,6 @@ class PublisherTerritory(CWRObject):
             transaction.transaction_reject('Invalid Inclusion Exclusion indicator', self)
 
     def field_level_validation(self):
-        self.pr_share.format('float')
-        self.mr_share.format('float')
-        self.sr_share.format('float')
-
         self.shares_change.check(['Y', 'N'], False, 'N')
 
     def record_level_validation(self):
@@ -1101,6 +1181,8 @@ class RecordingDetail(CWRObject):
 
 class Registration(CWRObject):
     def __init__(self, number, record, fields):
+        self.records = []
+
         self._entire_work_title = None
         self._recording_details = None
         self._version_original_title = None
@@ -1237,7 +1319,7 @@ class Registration(CWRObject):
         else:
             if publisher.type.value not in ['E', 'PA']:
                 self.transaction_reject('First publisher in a chain must be original or income participant', publisher)
-            self._publishers[publisher.sequence_id.value] = publisher
+            self._publishers[str(publisher.sequence_id.value)] = publisher
             self._last_record = publisher.record_type.value
 
     def add_writer(self, writer):
@@ -1283,7 +1365,18 @@ class Registration(CWRObject):
 
         records.extend(self._origins)
 
+        self.records = records
+
+
         return records
+
+    def format_fields(self):
+        super(Registration, self).format_fields()
+
+        self.copyright_date.format('date')
+        self.duration.format('time')
+        self.composite_component_count.format('integer')
+        self.printed_edition_publication_date.format('date')
 
     def transaction_level_validation(self, transaction):
         if self._entire_work_title is not None:
@@ -1355,7 +1448,7 @@ class Registration(CWRObject):
                 self.transaction_reject('Not writer designation code required for work registration')
 
             if self.version_type.value == 'ORI' and any(
-                            wri.designation_code.value in ['AD', 'AR', 'SD'] for wri in self._writers):
+                    wri.designation_code.value in ['AD', 'AR', 'SD'] for wri in self._writers):
                 self.transaction_reject('Invalid writer designation code for ORI version type')
 
         if self.musical_distribution_category.check(DISTRIBUTION_CATEGORY_TABLE):
@@ -1415,19 +1508,11 @@ class Registration(CWRObject):
         if self.language_code.check(LANGUAGE_CODES, True):
             self.transaction_reject('Invalid language code for transaction')
 
-        self.copyright_date.format('date')
-
-        if self.duration.value is not None:
-            self.duration.format('time')
-
         self.recorded_indicator.check(['Y', 'N', 'U'], 'U')
         self.text_music_relationship.check(TEXT_MUSIC_TABLE, True)
         self.composite_type.check(COMPOSITE_TYPE, True)
         self.excerpt_type.check(EXCERPT_TYPE, True)
         self.cwr_work_type.check(WORK_TYPES, True)
-
-        self.composite_component_count.format('integer')
-        self.printed_edition_publication_date.format('date')
         self.exceptional_clause.check(['Y', 'N', 'U'], True, 'U')
 
     def file_level_validation(self, document):
@@ -1515,9 +1600,9 @@ class Registration(CWRObject):
         for wri in self._writers:
             wri.record_level_validation()
 
-            for agent in wri.agents():
-                if not any(pub.interested_party_id.value == agent.ip_id.value for pub in self._publishers):
-                    agent.reject('IP value not correspond to any of the previous publishers')
+        for agent in wri.agents():
+            if not any(pub.interested_party_id.value == agent.ip_id.value for pub in self._publishers):
+                agent.reject('IP value not correspond to any of the previous publishers')
         for ori in self._origins:
             ori.record_level_validation()
 
@@ -1558,6 +1643,13 @@ class Trailer(CWRObject):
         self.record_count = None
 
         super(Trailer, self).__init__(number, record, fields)
+
+    def format_fields(self):
+        super(Trailer, self).format_fields()
+
+        self.group_count.format('integer')
+        self.transaction_count.format('integer')
+        self.record_count.format('integer')
 
     def file_level_validation(self, document):
         pass
@@ -1650,6 +1742,11 @@ class WorkComponent(CWRObject):
 
         super(WorkComponent, self).__init__(number, record, fields)
 
+    def format_fields(self):
+        super(WorkComponent, self).format_fields()
+
+        self.duration.format('time')
+
     def transaction_level_validation(self, transaction):
         pass
 
@@ -1663,7 +1760,7 @@ class WorkComponent(CWRObject):
         pass
 
     def field_level_validation(self):
-        if self.writer_two_first_name is not None and self.writer_two_last_name is None:
+        if self.writer_two_first_name.value is not None and self.writer_two_last_name.value is None:
             self.writer_two_first_name.reject()
             self.writer_two_last_name.reject()
 
@@ -1711,6 +1808,7 @@ class WorkOrigin(CWRObject):
         self.blt = None
         self.visan_version = None
         self.visan_isan = None
+        self.visan_episode = None
         self.visan_check_digit = None
         self.production_id = None
         self.episode_title = None
@@ -1721,18 +1819,26 @@ class WorkOrigin(CWRObject):
 
         super(WorkOrigin, self).__init__(number, record, fields)
 
+    def format_fields(self):
+        super(WorkOrigin, self).format_fields()
+
+        self.cut_number.format('integer')
+        self.visan_version.format('integer')
+        self.visan_isan.format('integer')
+        self.visan_episode.format('integer')
+        self.visan_check_digit.format('integer')
+        self.production_year.format('integer')
+        self.avi_key_society.format('integer')
+
     def file_level_validation(self, document):
         pass
 
     def field_level_validation(self):
-        self.cut_number.format('integer')
-
         if self.cd_identifier.value is None or self.cut_number is None:
             self.cd_identifier.reject()
             self.cut_number.reject()
 
         self.blt.check(['B', 'L', 'T'], True)
-        self.production_year.format('integer')
 
     def transaction_level_validation(self, transaction):
         pass
@@ -1866,7 +1972,7 @@ class WriterControl(CWRObject):
 
         if self.record_type == 'OWR':
             territory.transaction_reject()
-        elif territory.interested_party_id.value == self.interested_party_id.value:
+        elif territory.interested_party_id.value != self.interested_party_id.value:
             territory.reject('Writer interested party id not correspond to previous writer interested party id')
 
         if territory.tis_numeric_code.value not in self._territories.keys():
@@ -1885,6 +1991,15 @@ class WriterControl(CWRObject):
         records.extend(self._agents)
 
         return records
+
+    def format_fields(self):
+        super(WriterControl, self).format_fields()
+
+        self.tax_id_number.format('integer')
+        self.pr_share.format('float')
+        self.mr_share.format('float')
+        self.sr_share.format('float')
+        self.personal_number.format('integer')
 
     def file_level_validation(self, document):
         for agent in self._agents:
@@ -1942,10 +2057,6 @@ class WriterControl(CWRObject):
         if self._nr_name is not None:
             self._nr_name.field_level_validation()
 
-        self.pr_share.format('float')
-        self.mr_share.format('float')
-        self.sr_share.format('float')
-
         if self.record_type.value == 'OWR':
             self.unknown_indicator.check(['Y', 'N'], True, 'N')
 
@@ -1955,7 +2066,6 @@ class WriterControl(CWRObject):
         self.reversionary_indicator.check(['Y', 'N', 'U'], True)
         self.first_recording_refusal_indicator.check(['Y', 'N'], True)
         self.work_for_hire_indicator.check(['Y', 'N'], True)
-        self.tax_id_number.format('integer')
 
     def record_level_validation(self):
         for agent in self._agents:
@@ -1989,12 +2099,20 @@ class WriterTerritory(CWRObject):
 
         super(WriterTerritory, self).__init__(number, record, fields)
 
+    def format_fields(self):
+        super(WriterTerritory, self).format_fields()
+
+        self.pr_share.format('float')
+        self.mr_share.format('float')
+        self.sr_share.format('float')
+        self.sequence_id.format('integer')
+
     def file_level_validation(self, document):
         pass
 
     def transaction_level_validation(self, transaction):
         if self.inclusion_exclusion_indicator.value == 'I' and \
-                                        self.pr_share.value == self.mr_share.value == self.sr_share.value == 0:
+                self.pr_share.value == self.mr_share.value == self.sr_share.value == 0:
             transaction.transaction_reject('Expected at least one share to be greater than 0', self)
 
         if self.pr_share.value > 100:
@@ -2010,10 +2128,6 @@ class WriterTerritory(CWRObject):
             transaction.transaction_reject('Invalid inclusion exclusion indicator', self)
 
     def field_level_validation(self):
-        self.pr_share.format('double')
-        self.mr_share.format('double')
-        self.sr_share.format('double')
-
         self.shares_change.check(['Y', 'N'], True, 'N')
 
     def record_level_validation(self):

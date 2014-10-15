@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 __author__ = 'Borja'
 
 
@@ -9,11 +7,14 @@ class Document(object):
         self._trailer = None
 
         self._groups = {}
-        self._groups_types = []
+        self._group_types = {}
 
         self._last_record = None
         self._rejected = False
         self._messages = []
+
+        self._records_number = 0
+        self._transactions_number = 0
 
     @property
     def header(self):
@@ -37,6 +38,14 @@ class Document(object):
     def rejected(self):
         return self._rejected
 
+    @property
+    def records_number(self):
+        return self._records_number
+
+    @property
+    def transactions_number(self):
+        return self._transactions_number
+
     def reject(self, record, message_text):
         from models.cwr_objects import CWRMessage
 
@@ -48,12 +57,12 @@ class Document(object):
         if self._last_record not in ['HDR', 'GRT']:
             self.reject(group, 'Group expected after HDR or GRT')
 
-        if int(group.id.value) != len(self._groups) + 1:
+        if group.id.value != len(self._groups) + 1:
             group.group_reject('Groups expected in sequence')
 
-        if group.transaction_type.value not in self._groups_types:
-            self._groups[group.id.value] = group
-            self._groups_types.append(group.transaction_type.value)
+        if group.transaction_type.value not in self._group_types.keys():
+            self._groups[str(group.id.value)] = group
+            self._group_types[group.transaction_type.value] = str(group.id.value)
 
         self._last_record = group.record_type.value
 
@@ -61,6 +70,7 @@ class Document(object):
         self._header.file_level_validation(self)
 
         for group in self._groups.values():
+            self._transactions_number += len(group.transactions)
             group.group_level_validation(group)
             group.file_level_validation(self)
 
@@ -75,5 +85,7 @@ class Document(object):
                 records.append(transaction)
                 records.extend(transaction.extract_records())
         records.append(self._trailer)
+
+        self._records_number = len(records)
 
         return records
