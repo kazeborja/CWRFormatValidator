@@ -10,6 +10,15 @@
     background-color: #dff0d8 !important;
 }
 
+#quick-link {
+    float: right;
+    margin-bottom: 1em;
+}
+
 .transaction-summary dt{
     width: auto;
+}
+
+.jumbotrom {
+    margin-top: 1em;
 }

@@ -34,13 +34,27 @@
 				        <!-- <li><a href="#">View results</a></li> -->
 		            </ul>
 	            </div>
-            </div>
+                </div>
 		</div>
         <div id="content">
           {% if document.rejected %}
             <h2>Document has been rejected</h2>
             <p>Reason: {{ document.messages }}</p>
           {% else %}
+            <div class="row" id="quick-link">
+                <div class="col-lg-offset-10 col-lg-2">
+                <div class="input-group">
+                  <input id="quick-search" type="text" class="form-control" onkeyup="loadQuickLinks(this)">
+                  <div class="input-group-btn">
+                    <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">Go to <span class="caret"></span></button>
+                    <ul class="dropdown-menu dropdown-menu-right" role="menu">
+                      <li><a id="trans-quick-search" href="">Transaction</a></li>
+                      <li><a id="rec-quick-search" href="">Record</a></li>
+                    </ul>
+                  </div><!-- /btn-group -->
+                </div><!-- /input-group -->
+              </div><!-- /.col-lg-6 -->
+            </div>
             <ul class="nav nav-tabs nav-justified" role="tablist">
               <li class="active"><a href="#summary" data-toggle="tab">Summary</a></li>
               <li><a href="#agreements" data-toggle="tab">Agreements</a></li>
@@ -63,95 +77,139 @@
                   <p><a class="btn btn-primary" role="button" href="/submit/{{ filename }}">Submit results</a></p>
                 </div>
                 <div class="tab-pane" id="agreements">
-                  {% if document._groups[document._group_types['AGR']]._rejected %}
-                    <p>This group has been rejected</p>
-                    <p>{{document._groups[document._group_types['AGR']]._messages}}</p>
-                  {% else %}
-                  {% for transaction in document._groups[document._group_types['AGR']]._transactions %}
-                      {% if transaction._rejected %}
-                        <div class="panel-heading bg-danger">
-                        {{ transaction._record }}
-                        </div>
-                        <div class="panel-body">
-                        {{ transaction._messages }}
-                        </div>
+                  {% if 'AGR' in document._group_types.keys() %}
+                      {% if document._groups[document._group_types['AGR']]._rejected %}
+                        <p>This group has been rejected</p>
+                        <p>{{document._groups[document._group_types['AGR']]._messages}}</p>
                       {% else %}
-                        <div class="panel-heading bg-success">
-                        {{ transaction._record }}
-                        </div>
+                      {% for transaction in document._groups[document._group_types['AGR']]._transactions %}
+                          {% if transaction._rejected %}
+                            <div class="panel-heading bg-danger" id="trans_{{ transaction.transaction_number._value }}">
+                            {{ transaction._record }}
+                            </div>
+                            <div class="panel-body">
+                                <ul class="list-group">
+                                    {% for message in transaction._messages %}
+                                        <li class="list-group-item">{{ str(message) }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                          {% else %}
+                            <div class="panel-heading bg-success" id="trans_{{ transaction.transaction_number._value }}">
+                            {{ transaction._record }}
+                            </div>
+                          {% endif %}
+                          <ul class="list-group">
+                              {% for record in transaction.records|sort(attribute='record_number._value') %}
+                                {% if record._rejected %}
+                                    <li class="list-group-item bg-danger" id="rec_{{ record.record_number._value }}">{{ record._record }}</li>
+                                    <li class="list-group-item">
+                                        <ul class="list-group">
+                                            {% for message in record._messages %}
+                                                <li class="list-group-item">{{ str(message) }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    </li>
+                                {% else %}
+                                    <li class="list-group-item bg-success" id="rec_{{ record.record_number._value }}">{{ record._record }}</li>
+                                {% endif %}
+                              {% endfor %}
+                          </ul>
+                      {% endfor %}
                       {% endif %}
-                      <ul class="list-group">
-                          {% for record in transaction.records %}
-                            {% if record._rejected %}
-                                <li class="list-group-item bg-danger">{{ record._record }}</li>
-                                <li class="list-group-item">
-                                    {{ record._messages }}
-                                </li>
-                            {% else %}
-                                <li class="list-group-item bg-success">{{ record._record }}</li>
-                            {% endif %}
-                          {% endfor %}
-                      </ul>
-                  {% endfor %}
-                  {% endif %}
+                    {% else %}
+                        <p>This group was not present in the document</p>
+                    {% endif %}
                 </div>
                 <div class="tab-pane" id="new-works">
-                {% for transaction in document._groups[document._group_types['NWR']]._transactions %}
-                      {% if transaction._rejected %}
-                        <div class="panel-heading bg-danger">
-                        {{ transaction._record }}
-                        </div>
-                        <div class="panel-body">
-                        {{ transaction._messages }}
-                        </div>
+                    {% if 'NWR' in document._group_types.keys() %}
+                      {% if document._groups[document._group_types['NWR']]._rejected %}
+                        <p>This group has been rejected</p>
+                        <p>{{document._groups[document._group_types['NWR']]._messages}}</p>
                       {% else %}
-                        <div class="panel-heading bg-success">
-                        {{ transaction._record }}
-                        </div>
+                      {% for transaction in document._groups[document._group_types['NWR']]._transactions %}
+                          {% if transaction._rejected %}
+                            <div class="panel-heading bg-danger" id="trans_{{ transaction.transaction_number._value }}">
+                            {{ transaction._record }}
+                            </div>
+                            <div class="panel-body">
+                                <ul class="list-group">
+                                    {% for message in transaction._messages %}
+                                        <li class="list-group-item">{{ str(message) }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                          {% else %}
+                            <div class="panel-heading bg-success" id="trans_{{ transaction.transaction_number._value }}">
+                            {{ transaction._record }}
+                            </div>
+                          {% endif %}
+                          <ul class="list-group">
+                              {% for record in transaction.records|sort(attribute='record_number._value') %}
+                                {% if record._rejected %}
+                                    <li class="list-group-item bg-danger" id="rec_{{ record.record_number._value }}">{{ record._record }}</li>
+                                    <li class="list-group-item">
+                                        <ul class="list-group">
+                                            {% for message in record._messages %}
+                                                <li class="list-group-item">{{ str(message) }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    </li>
+                                {% else %}
+                                    <li class="list-group-item bg-success" id="rec_{{ record.record_number._value }}">{{ record._record }}</li>
+                                {% endif %}
+                              {% endfor %}
+                          </ul>
+                      {% endfor %}
                       {% endif %}
-                      <ul class="list-group">
-                          {% for record in transaction.records %}
-                            {% if record._rejected %}
-                                <li class="list-group-item bg-danger">{{ record._record }}</li>
-                                <li class="list-group-item">
-                                    {{ record._messages }}
-                                </li>
-                            {% else %}
-                                <li class="list-group-item bg-success">{{ record._record }}</li>
-                            {% endif %}
-                          {% endfor %}
-                      </ul>
-                  {% endfor %}
+                    {% else %}
+                        <p>This group was not present in the document</p>
+                    {% endif %}
                 </div>
                 <div class="tab-pane" id="rev-works">
-                 {% if 'REV' in document._group_types.keys() %}
-                 {% for transaction in document._groups[document._group_types['REV']]._transactions %}
-                      {% if transaction._rejected %}
-                        <div class="panel-heading bg-danger">
-                        {{ transaction._record }}
-                        </div>
-                        <div class="panel-body">
-                        {{ transaction._messages }}
-                        </div>
+                    {% if 'REV' in document._group_types.keys() %}
+                      {% if document._groups[document._group_types['REV']]._rejected %}
+                        <p>This group has been rejected</p>
+                        <p>{{document._groups[document._group_types['REV']]._messages}}</p>
                       {% else %}
-                        <div class="panel-heading bg-success">
-                        {{ transaction._record }}
-                        </div>
+                      {% for transaction in document._groups[document._group_types['REV']]._transactions %}
+                          {% if transaction._rejected %}
+                            <div class="panel-heading bg-danger" id="trans_{{ transaction.transaction_number._value }}">
+                            {{ transaction._record }}
+                            </div>
+                            <div class="panel-body">
+                                <ul class="list-group">
+                                    {% for message in transaction._messages %}
+                                        <li class="list-group-item">{{ str(message) }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                          {% else %}
+                            <div class="panel-heading bg-success" id="trans_{{ transaction.transaction_number._value }}">
+                            {{ transaction._record }}
+                            </div>
+                          {% endif %}
+                          <ul class="list-group">
+                              {% for record in transaction.records|sort(attribute='record_number._value') %}
+                                {% if record._rejected %}
+                                    <li class="list-group-item bg-danger" id="rec_{{ record.record_number._value }}">{{ record._record }}</li>
+                                    <li class="list-group-item">
+                                        <ul class="list-group">
+                                            {% for message in record._messages %}
+                                                <li class="list-group-item">{{ str(message) }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    </li>
+                                {% else %}
+                                    <li class="list-group-item bg-success" id="rec_{{ record.record_number._value }}">{{ record._record }}</li>
+                                {% endif %}
+                              {% endfor %}
+                          </ul>
+                      {% endfor %}
                       {% endif %}
-                      <ul class="list-group">
-                          {% for record in transaction.records %}
-                            {% if record._rejected %}
-                                <li class="list-group-item bg-danger">{{ record._record }}</li>
-                                <li class="list-group-item">
-                                    {{ record._messages }}
-                                </li>
-                            {% else %}
-                                <li class="list-group-item bg-success">{{ record._record }}</li>
-                            {% endif %}
-                          {% endfor %}
-                      </ul>
-                  {% endfor %}
-                  {% endif %}
+                    {% else %}
+                        <p>This group was not present in the document</p>
+                    {% endif %}
                  </div>
             </div>
           {% endif %}

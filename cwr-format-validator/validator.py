@@ -17,6 +17,8 @@ class Validator(object):
         return self._document
 
     def validate_document(self, document_json):
+        self._document = Document()
+
         self.validate_document_format(document_json)
         self.validate_document_structure()
         self._document.validate()

@@ -36,17 +36,16 @@
             </div>
 		</div>
         <div id="content">
+            <div class="jumbotron">
+              <h2>How this works</h2>
+              <p>There will be two phases, the first one is direct validation, you will receive the ackowledgement file when finished.</p>
+              <p>The second one is dumping the file information into the database, when finished an ackowledgement file will be sent to the specified mail with the results.</p>
+            </div>
             <form class="form-horizontal" role="form" action="/upload" method="post" enctype="multipart/form-data">
               <div class="form-group">
                 <label for="inputEntity" class="col-sm-2 control-label">Sender</label>
                 <div class="col-sm-10">
-                  <input type="text" class="form-control" id="inputEntity" placeholder="Sending entity">
-                </div>
-              </div>
-              <div class="form-group">
-                <label for="inputSender" class="col-sm-2 control-label">Sending entity</label>
-                <div class="col-sm-10">
-                  <input type="text" class="form-control" id="inputSender" placeholder="Sender">
+                  <input type="text" class="form-control" id="inputEntity" placeholder="Sender email">
                 </div>
               </div>
               <div class="form-group">
