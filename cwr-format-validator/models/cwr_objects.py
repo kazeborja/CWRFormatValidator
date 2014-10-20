@@ -292,8 +292,8 @@ class Agreement(CWRObject):
         for ipa in self._interested_parties.values():
             ipa.field_level_validation()
 
-        self.shares_change.check(['Y', 'N'], 'N')
-        self.advance_given.check(['Y', 'N'], 'N')
+        self.shares_change.format('boolean')
+        self.advance_given.format('boolean')
 
     def record_level_validation(self):
         for territory in self._territories:
