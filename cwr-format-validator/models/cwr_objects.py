@@ -1508,6 +1508,7 @@ class Registration(CWRObject):
         if self.language_code.check(LANGUAGE_CODES, True):
             self.transaction_reject('Invalid language code for transaction')
 
+        self.grand_rights_indicator.format('boolean')
         self.recorded_indicator.check(['Y', 'N', 'U'], 'U')
         self.text_music_relationship.check(TEXT_MUSIC_TABLE, True)
         self.composite_type.check(COMPOSITE_TYPE, True)
