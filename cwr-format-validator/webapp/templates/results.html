@@ -84,7 +84,7 @@
                       {% else %}
                       {% for transaction in document._groups[document._group_types['AGR']]._transactions %}
                           {% if transaction._rejected %}
-                            <div class="panel-heading bg-danger" id="trans_{{ transaction.transaction_number._value }}">
+                            <div class="panel-heading bg-danger" id="trans_{{ transaction.transaction_number }}">
                             {{ transaction._record }}
                             </div>
                             <div class="panel-body">
@@ -95,14 +95,14 @@
                                 </ul>
                             </div>
                           {% else %}
-                            <div class="panel-heading bg-success" id="trans_{{ transaction.transaction_number._value }}">
+                            <div class="panel-heading bg-success" id="trans_{{ transaction.transaction_number }}">
                             {{ transaction._record }}
                             </div>
                           {% endif %}
                           <ul class="list-group">
-                              {% for record in transaction.records|sort(attribute='record_number._value') %}
+                              {% for record in transaction.records|sort(attribute='record_number') %}
                                 {% if record._rejected %}
-                                    <li class="list-group-item bg-danger" id="rec_{{ record.record_number._value }}">{{ record._record }}</li>
+                                    <li class="list-group-item bg-danger" id="rec_{{ record.record_number }}">{{ record._record }}</li>
                                     <li class="list-group-item">
                                         <ul class="list-group">
                                             {% for message in record._messages %}
@@ -111,7 +111,7 @@
                                         </ul>
                                     </li>
                                 {% else %}
-                                    <li class="list-group-item bg-success" id="rec_{{ record.record_number._value }}">{{ record._record }}</li>
+                                    <li class="list-group-item bg-success" id="rec_{{ record.record_number }}">{{ record._record }}</li>
                                 {% endif %}
                               {% endfor %}
                           </ul>
@@ -129,7 +129,7 @@
                       {% else %}
                       {% for transaction in document._groups[document._group_types['NWR']]._transactions %}
                           {% if transaction._rejected %}
-                            <div class="panel-heading bg-danger" id="trans_{{ transaction.transaction_number._value }}">
+                            <div class="panel-heading bg-danger" id="trans_{{ transaction.transaction_number }}">
                             {{ transaction._record }}
                             </div>
                             <div class="panel-body">
@@ -140,14 +140,14 @@
                                 </ul>
                             </div>
                           {% else %}
-                            <div class="panel-heading bg-success" id="trans_{{ transaction.transaction_number._value }}">
+                            <div class="panel-heading bg-success" id="trans_{{ transaction.transaction_number }}">
                             {{ transaction._record }}
                             </div>
                           {% endif %}
                           <ul class="list-group">
-                              {% for record in transaction.records|sort(attribute='record_number._value') %}
+                              {% for record in transaction.records|sort(attribute='record_number') %}
                                 {% if record._rejected %}
-                                    <li class="list-group-item bg-danger" id="rec_{{ record.record_number._value }}">{{ record._record }}</li>
+                                    <li class="list-group-item bg-danger" id="rec_{{ record.record_number }}">{{ record._record }}</li>
                                     <li class="list-group-item">
                                         <ul class="list-group">
                                             {% for message in record._messages %}
@@ -156,7 +156,7 @@
                                         </ul>
                                     </li>
                                 {% else %}
-                                    <li class="list-group-item bg-success" id="rec_{{ record.record_number._value }}">{{ record._record }}</li>
+                                    <li class="list-group-item bg-success" id="rec_{{ record.record_number }}">{{ record._record }}</li>
                                 {% endif %}
                               {% endfor %}
                           </ul>
@@ -174,7 +174,7 @@
                       {% else %}
                       {% for transaction in document._groups[document._group_types['REV']]._transactions %}
                           {% if transaction._rejected %}
-                            <div class="panel-heading bg-danger" id="trans_{{ transaction.transaction_number._value }}">
+                            <div class="panel-heading bg-danger" id="trans_{{ transaction.transaction_number }}">
                             {{ transaction._record }}
                             </div>
                             <div class="panel-body">
@@ -185,14 +185,14 @@
                                 </ul>
                             </div>
                           {% else %}
-                            <div class="panel-heading bg-success" id="trans_{{ transaction.transaction_number._value }}">
+                            <div class="panel-heading bg-success" id="trans_{{ transaction.transaction_number }}">
                             {{ transaction._record }}
                             </div>
                           {% endif %}
                           <ul class="list-group">
-                              {% for record in transaction.records|sort(attribute='record_number._value') %}
+                              {% for record in transaction.records|sort(attribute='record_number') %}
                                 {% if record._rejected %}
-                                    <li class="list-group-item bg-danger" id="rec_{{ record.record_number._value }}">{{ record._record }}</li>
+                                    <li class="list-group-item bg-danger" id="rec_{{ record.record_number }}">{{ record._record }}</li>
                                     <li class="list-group-item">
                                         <ul class="list-group">
                                             {% for message in record._messages %}
@@ -201,7 +201,7 @@
                                         </ul>
                                     </li>
                                 {% else %}
-                                    <li class="list-group-item bg-success" id="rec_{{ record.record_number._value }}">{{ record._record }}</li>
+                                    <li class="list-group-item bg-success" id="rec_{{ record.record_number }}">{{ record._record }}</li>
                                 {% endif %}
                               {% endfor %}
                           </ul>

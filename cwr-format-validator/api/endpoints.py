@@ -79,6 +79,8 @@ class ValidateDocumentAPI(Resource):
                 for message in record.messages:
                     records.append(str(message).encode('utf-8'))
 
+            jsonConverter.print_object(document)
+
             result = {
                 'success': True,
                 'document': document,
