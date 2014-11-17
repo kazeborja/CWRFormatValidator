@@ -292,8 +292,8 @@ class Agreement(CWRObject):
         for ipa in self._interested_parties.values():
             ipa.field_level_validation()
 
-        self.shares_change.check(['Y', 'N'], 'N')
-        self.advance_given.check(['Y', 'N'], 'N')
+        self.shares_change.format('boolean')
+        self.advance_given.format('boolean')
 
     def record_level_validation(self):
         for territory in self._territories:
@@ -1508,6 +1508,7 @@ class Registration(CWRObject):
         if self.language_code.check(LANGUAGE_CODES, True):
             self.transaction_reject('Invalid language code for transaction')
 
+        self.grand_rights_indicator.format('boolean')
         self.recorded_indicator.check(['Y', 'N', 'U'], 'U')
         self.text_music_relationship.check(TEXT_MUSIC_TABLE, True)
         self.composite_type.check(COMPOSITE_TYPE, True)
