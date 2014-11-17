@@ -3,6 +3,7 @@ import json
 import urllib2
 
 from flask import render_template, request, send_file, session
+from pip._vendor import requests
 
 from webapp import app
 from utils.file_manager import FileManager
@@ -51,7 +52,12 @@ def manage_uploaded_file():
         with open(FileManager.get_validations_path('CWROutput.V21'), "w") as output_file:
             for record in response_json["records"]:
                 output_file.write((record + "\n").encode('utf-8'))
-        session['document'] = response_json['document']
+
+        url = DATABASE_ENDPOINT + '/persist-document/'
+        data = json.dumps(response_json['document'])
+        headers = {'Content-type': 'application/json', 'Accept': 'text/plain'}
+
+        requests.post(url, data=data, headers=headers)
 
         return render_template('results.html', filename='CWROutput.V21', document=response_json["document"])
 
@@ -65,6 +71,8 @@ def download_file(file_name):
 
 @app.route('/submit', methods=['POST'])
 def submit_file():
+    print request['document']
+
     if session['document'] is not None:
         json_document = session['document']
         req = urllib2.Request(DATABASE_ENDPOINT + '/persist-document')
